@@ -1,22 +1,19 @@
-version: "3.8"
 
 services:
   postgres:
     image: postgres:15
-    container_name: postgres_cvflow
     restart: always
     environment:
+      POSTGRES_DB: cvflow
       POSTGRES_USER: cvuser
       POSTGRES_PASSWORD: cvpass
-      POSTGRES_DB: cvflow
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 
   cvflow_api:
     build: ./api
-    container_name: api_cvflow
     ports:
       - "8000:8000"
     depends_on:
@@ -25,4 +22,4 @@ services:
       - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
 
 volumes:
-  postgres_data:
+  pgdata:

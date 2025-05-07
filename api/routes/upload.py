@@ -1,9 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
+from uuid import uuid4
+from cv_model import CV
 from database import SessionLocal
-from models.cv_model import CV
-from services.parser import extract_text_from_pdf
-from utils.validate_cv import is_valid_cv
+import os
 
 router = APIRouter()
 
@@ -15,16 +15,28 @@ def get_db():
         db.close()
 
 @router.post("/upload")
-async def upload_cv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
+async def upload_cv(
+    file: UploadFile = File(...),
+    full_name: str = Form(...),
+    email: str = Form(...),
+    position: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not file.filename.endswith((".pdf", ".docx", ".doc")):
+        raise HTTPException(status_code=400, detail="Archivo no válido. Debe ser PDF o Word.")
 
-    text = extract_text_from_pdf(file)
-    valid = is_valid_cv(text)
+    cv_id = str(uuid4())
 
-    cv = CV(filename=file.filename, content=text, is_valid_cv=valid)
+    cv = CV(
+        id=None,
+        filename=file.filename,
+        full_name=full_name,
+        email=email,
+        position=position,
+        status="pendiente"
+    )
     db.add(cv)
     db.commit()
     db.refresh(cv)
 
-    return {"cv_id": cv.id, "valid": valid}
+    return {"cv_id": cv.id, "status": "pendiente"}

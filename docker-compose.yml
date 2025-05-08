@@ -1,6 +1,32 @@
-version: "3.8"
-
 services:
+  api:
+    build:
+      context: ./api
+      dockerfile: dockerfile
+    container_name: cvflow_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/uploads:/app/data/uploads
+      - ./data/storage-db:/app/data/storage-db
+    environment:
+      - UPLOAD_DIR=/app/data/uploads
+      - DATABASE_URL=postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+      
+
+    depends_on:
+      - postgres
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # comunicación AMQP
+      - "15672:15672"    # panel web
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: gues
+
   postgres:
     image: postgres:15
     container_name: postgres_cvflow
@@ -13,16 +39,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  cvflow_api:
-    build: ./api
-    container_name: api_cvflow
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-    environment:
-      - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
+      - ./data/uploads:/app/data/uploads
+      - ./data/storage-db:/app/data/storage-db
 
 volumes:
   postgres_data:
+    driver: local
+

@@ -1,9 +1,17 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean
-from database import Base
+# api/models/cv_model.py
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 
-class CV(Base):
-    __tablename__ = "cvs"
-    id = Column(Integer, primary_key=True, index=True)
+Base = declarative_base()
+
+class CVRequest(Base):
+    __tablename__ = "cv_requests"
+
+    cv_id = Column(String, primary_key=True)
+    nombre = Column(String)
+    email = Column(String)
+    puesto = Column(String)
     filename = Column(String)
-    content = Column(Text)
-    is_valid_cv = Column(Boolean)
+    estado = Column(String, default="pendiente")
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)

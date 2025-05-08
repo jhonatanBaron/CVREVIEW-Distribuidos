@@ -1,6 +1,9 @@
+# api/requirements.txt
 fastapi
 uvicorn
 sqlalchemy
-psycopg2-binary
-pdfminer.six
 python-multipart
+psycopg2-binary
+pydantic
+python-dotenv
+requests

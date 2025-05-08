@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 from cv_model import CV
 from database import SessionLocal
+from rabbitmq import publish_to_parser_queue
 import os
 
 router = APIRouter()
@@ -28,7 +29,7 @@ async def upload_cv(
     cv_id = str(uuid4())
 
     cv = CV(
-        id=None,
+        #id=None,
         filename=file.filename,
         full_name=full_name,
         email=email,
@@ -38,5 +39,12 @@ async def upload_cv(
     db.add(cv)
     db.commit()
     db.refresh(cv)
+
+    message = {
+    "cv_id": cv.id,
+    "email": email,
+    "filename": file.filename  
+    }
+    publish_to_parser_queue(message)
 
     return {"cv_id": cv.id, "status": "pendiente"}

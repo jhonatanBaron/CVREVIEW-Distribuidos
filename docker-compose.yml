@@ -18,8 +18,27 @@ services:
       - "8000:8000"
     depends_on:
       - postgres
+      - rabbitmq
     environment:
       - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
+      - RABBITMQ_HOST=rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Interfaz web de gestión
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      
+  parser_worker:
+    build: ./api/workers
+    depends_on:
+      - rabbitmq
+      - postgres
+    environment:
+    - RABBITMQ_HOST=rabbitmq
 
 volumes:
   pgdata:

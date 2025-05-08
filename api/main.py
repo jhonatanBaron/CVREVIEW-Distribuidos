@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from cv_model import Base
-from routes import upload
+from routes import upload, status
 
 # Crear la instancia principal de FastAPI
 app = FastAPI(
@@ -25,3 +25,4 @@ app.add_middleware(
 
 # Incluir rutas definidas en routes/upload.py
 app.include_router(upload.router)
+app.include_router(status.router)

@@ -1,5 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from uuid import uuid4
+from api.shared.queue_config import get_channel
+
+
 from services.parser import save_uploaded_file
 from database.database import save_cv_request
 import os

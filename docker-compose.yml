@@ -34,11 +34,20 @@ services:
       
   parser_worker:
     build: ./api/workers
+    volumes:
+      - ./files:/files
     depends_on:
       - rabbitmq
       - postgres
     environment:
-    - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=rabbitmq
+  keyword_worker:
+    build: ./api/workers
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+
 
 volumes:
   pgdata:

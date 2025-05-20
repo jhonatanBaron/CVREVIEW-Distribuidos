@@ -14,6 +14,7 @@ class CVRequest(Base):
     filename = Column(String)
     estado = Column(String, default="pendiente")
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    keywords = Column(String, nullable=True)  # JSON list serializada
 
     def __repr__(self):
         return f"<CVRequest(cv_id={self.cv_id}, email={self.email}, estado={self.estado})>"

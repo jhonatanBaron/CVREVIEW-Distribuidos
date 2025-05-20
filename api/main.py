@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.upload import router as upload_router
 from database.database import init_db
+from routes.status import router as status_router
+
 
 app = FastAPI(
     title="CVFlow API",
@@ -20,6 +22,7 @@ app.add_middleware(
 
 # Rutas
 app.include_router(upload_router, prefix="/api")
+
 
 @app.get("/")
 def root():

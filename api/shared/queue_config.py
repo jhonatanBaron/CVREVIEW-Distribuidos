@@ -1,3 +1,4 @@
+#shared/queue_config.py
 import pika
 import os
 

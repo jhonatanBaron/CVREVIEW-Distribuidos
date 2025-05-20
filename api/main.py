@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.upload import router as upload_router
+from database.database import init_db
 
 app = FastAPI(
     title="CVFlow API",
@@ -8,10 +9,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Middleware CORS
+# Middleware CORS-- permite acceso desde el front
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # puedes limitarlo en producción
+    allow_origins=["*"],  # limitarlo  producción -- aaceos con http://localhost:3000
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,3 +60,9 @@ def api_v1_redoc():
 @app.get("/api/v1/openapi.json")
 def api_v1_openapi():
     return {"message": "Especificación OpenAPI de la API v1"}
+
+@app.on_event("startup")
+def on_startup():
+    # Inicializar la base de datos
+    init_db()
+    print("Base de datos inicializada")

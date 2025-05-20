@@ -1,27 +1,32 @@
-# api/database/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.cv_model import Base, CVRequest
-import os
+from api.config import settings
 
-# Leer la URL desde variable de entorno (por defecto PostgreSQL local)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow")
-
-engine = create_engine(DATABASE_URL)
+# Crear engine y sesión
+engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base.metadata.create_all(bind=engine)
+# Crear las tablas si no existen
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
+# Función para guardar solicitud de CV
 def save_cv_request(cv_id, nombre, email, puesto, filename):
     db = SessionLocal()
-    new_cv = CVRequest(
-        cv_id=cv_id,
-        nombre=nombre,
-        email=email,
-        puesto=puesto,
-        filename=filename,
-        estado="pendiente"
-    )
-    db.add(new_cv)
-    db.commit()
-    db.close()
+    try:
+        new_cv = CVRequest(
+            cv_id=cv_id,
+            nombre=nombre,
+            email=email,
+            puesto=puesto,
+            filename=filename,
+            estado="pendiente"
+        )
+        db.add(new_cv)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()

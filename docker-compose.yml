@@ -1,33 +1,9 @@
+version: "3.8"
+
 services:
-  api:
-    build:
-      context: ./api
-      dockerfile: dockerfile
-    container_name: cvflow_api
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data/uploads:/app/data/uploads
-      - ./data/storage-db:/app/data/storage-db
-    environment:
-      - UPLOAD_DIR=/app/data/uploads
-      - DATABASE_URL=postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
-      
 
-    depends_on:
-      - postgres
-  
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"      # comunicación AMQP
-      - "15672:15672"    # panel web
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: gues
-
-  postgres:
+  # --- Base de datos PostgreSQL ---
+  postgres_cvflow:
     image: postgres:15
     container_name: postgres_cvflow
     restart: always
@@ -39,10 +15,116 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  # --- RabbitMQ con panel de administración ---
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  # --- MailHog para capturar emails en desarrollo ---
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"    # SMTP
+      - "8025:8025"    # Web UI
+
+  # --- API FastAPI ---
+  api:
+    build:
+      context: ./api
+      dockerfile: dockerfile
+    container_name: cvflow_api
+    depends_on:
+      - postgres_cvflow
+      - rabbitmq
+      - mailhog
+    ports:
+      - "8000:8000"
+    volumes:
       - ./data/uploads:/app/data/uploads
       - ./data/storage-db:/app/data/storage-db
+    environment:
+      UPLOAD_DIR: /app/data/uploads
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+      RABBITMQ_HOST: rabbitmq
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+
+  # --- Parser Worker ---
+  parser_worker:
+    build:
+      context: ./workers/parser_worker
+      dockerfile: Dockerfile
+    container_name: parser_worker
+    depends_on:
+      - rabbitmq
+      - postgres_cvflow
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+
+  # --- Keyword Extraction Worker ---
+  keyword_worker:
+    build:
+      context: ./workers/keyword_worker/Dockerfile
+      
+    container_name: keyword_worker
+    depends_on:
+      - rabbitmq
+      - postgres_cvflow
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+
+  # --- Feedback Worker ---
+  feedback_worker:
+    build:
+      context: ./workers/feedback_worker
+      dockerfile: Dockerfile
+    container_name: feedback_worker
+    depends_on:
+      - rabbitmq
+      - postgres_cvflow
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+
+  # --- JobMatch Worker ---
+  jobmatch_worker:
+    build:
+      context: ./workers/jobmatch_worker
+      dockerfile: Dockerfile
+    container_name: jobmatch_worker
+    depends_on:
+      - rabbitmq
+      - postgres_cvflow
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+
+  # --- Notification Worker ---
+  notification_worker:
+    build:
+      context: ./workers/notification_worker
+      dockerfile: Dockerfile
+    container_name: notification_worker
+    depends_on:
+      - rabbitmq
+      - postgres_cvflow
+      - mailhog
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DATABASE_URL: postgresql://cvuser:cvpass@postgres_cvflow:5432/cvflow
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
 
 volumes:
   postgres_data:
     driver: local
-

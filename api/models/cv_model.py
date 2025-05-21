@@ -15,6 +15,10 @@ class CVRequest(Base):
     estado = Column(String, default="pendiente")
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     keywords = Column(String, nullable=True)  # JSON list serializada
+    feedback = Column(String, nullable=True)      # JSON o texto con sugerencias
+    score = Column(Float, nullable=True)          # Puntuación global del CV
+    job_matches = Column(String, nullable=True)  # JSON list serializada de vacantes
+ 
 
     def __repr__(self):
         return f"<CVRequest(cv_id={self.cv_id}, email={self.email}, estado={self.estado})>"

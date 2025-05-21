@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.upload import router as upload_router
 from database.database import init_db
 from routes.status import router as status_router
+from routes.keywords import router as keywords_router
+from routes.feedback import router as feedback_router
+from routes.notification import router as notification_router
 
 
 app = FastAPI(
@@ -22,6 +25,10 @@ app.add_middleware(
 
 # Rutas
 app.include_router(upload_router, prefix="/api")
+app.include_router(status_router, prefix="/api")
+app.include_router(keywords_router, prefix="/api")
+app.include_router(feedback_router, prefix="/api")
+app.include_router(notification_router, prefix="/api")
 
 
 @app.get("/")

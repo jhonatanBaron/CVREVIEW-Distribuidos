@@ -1,4 +1,4 @@
-# workers/notification_worker/Dockerfile
+# workers/jobmatch_worker/Dockerfile
 FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1
 
@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y build-essential && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY api /app/api
-COPY workers/notification_worker/worker.py /app/worker.py
+COPY workers/jobmatch_worker/worker.py /app/worker.py
 
 CMD ["python", "worker.py"]

@@ -1,19 +1,22 @@
 # api/routes/upload.py
+
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from api.cv_model import CV
 from api.database import SessionLocal
 from api.rabbitmq import publish_to_parser_queue
-from werkzeug.utils import secure_filename  # Para asegurar nombre de archivo
+from werkzeug.utils import secure_filename  # Para sanear el nombre del archivo
 import os
+import shutil
+import re
 
 router = APIRouter()
 
 # Tamaño máximo permitido del archivo (5 MB)
-MAX_FILE_SIZE = 5 * 1024 * 1024  
+MAX_FILE_SIZE = 5 * 1024 * 1024
 
-# Lista de posiciones válidas (puedes editar según tu proyecto)
+# Lista de posiciones válidas
 VALID_POSITIONS = {"Backend Developer", "Frontend Developer", "UX Designer", "Data Scientist"}
 
 def get_db():
@@ -31,46 +34,47 @@ async def upload_cv(
     position: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validar extensión del archivo
-    if not file.filename.endswith((".pdf", ".docx", ".doc")):
-        raise HTTPException(status_code=400, detail="Archivo no válido. Debe ser PDF o Word.")
-
-    # Validar tipo MIME del archivo
-    if file.content_type not in [
+    # 1. Extensión y MIME
+    if not file.filename.lower().endswith((".pdf", ".docx", ".doc")):
+        raise HTTPException(400, "Archivo no válido. Debe ser PDF o Word.")
+    if file.content_type not in (
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/msword"
-    ]:
-        raise HTTPException(status_code=400, detail="El tipo de archivo no es válido.")
+    ):
+        raise HTTPException(400, "El tipo de archivo no es válido.")
 
-    # Validar tamaño del archivo (leyéndolo parcialmente)
+    # 2. Tamaño
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="El archivo supera el tamaño máximo permitido de 5 MB.")
-    await file.seek(0)  # Reiniciar cursor del archivo para no afectar su posterior uso
+        raise HTTPException(400, "El archivo supera el tamaño máximo de 5 MB.")
+    await file.seek(0)
 
-    # Validar nombre completo (mínimo nombre y apellido)
+    # 3. Datos de formulario
     if len(full_name.strip().split()) < 2:
-        raise HTTPException(status_code=400, detail="Por favor ingresa tu nombre completo.")
-
-    # Validar que no exista una entrada previa con el mismo nombre y correo
-    existing_cv = db.query(CV).filter(CV.full_name == full_name, CV.email == email).first()
-    if existing_cv:
-        raise HTTPException(status_code=400, detail="Ya se ha registrado un CV con este nombre y correo.")
-
-    # Validar que la posición deseada sea válida
+        raise HTTPException(400, "Ingresa nombre y apellido.")
+    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_regex, email):
+        raise HTTPException(400, "Email con formato inválido.")
     if position not in VALID_POSITIONS:
-        raise HTTPException(status_code=400, detail=f"Posición no válida. Usa una de: {', '.join(VALID_POSITIONS)}.")
+        raise HTTPException(400, f"Posición no válida. Elige: {', '.join(VALID_POSITIONS)}.")
 
-    # Asegurar nombre del archivo (elimina rutas maliciosas, etc.)
-    safe_filename = secure_filename(file.filename)
+    # 4. Evitar duplicados
+    exists = db.query(CV).filter(CV.full_name == full_name, CV.email == email).first()
+    if exists:
+        raise HTTPException(409, "Ya existe un CV con ese nombre y correo.")
 
-    # Crear un nuevo UUID para el CV
-    cv_id = str(uuid4())
+    # 5. Sanear y guardar archivo
+    safe_name = secure_filename(file.filename)
+    upload_dir = "/files"
+    os.makedirs(upload_dir, exist_ok=True)
+    dest_path = os.path.join(upload_dir, safe_name)
+    with open(dest_path, "wb") as out:
+        shutil.copyfileobj(file.file, out)
 
-    # Crear instancia del modelo CV y guardar en base de datos
+    # 6. Registrar en BD
     cv = CV(
-        filename=safe_filename,
+        filename=safe_name,
         full_name=full_name,
         email=email,
         position=position,
@@ -80,17 +84,18 @@ async def upload_cv(
     db.commit()
     db.refresh(cv)
 
-    # Enviar mensaje al worker parser vía RabbitMQ
-    message = {
+    # 7. Encolar mensaje para parser
+    publish_to_parser_queue({
         "cv_id": cv.id,
         "email": email,
-        "filename": safe_filename
-    }
-    publish_to_parser_queue(message)
+        "filename": safe_name
+    })
 
-    # Respuesta al cliente
+    # 8. Respuesta
     return {
         "message": "CV recibido y enviado a procesamiento correctamente.",
         "cv_id": cv.id,
         "status_endpoint": f"/api/status/{cv.id}"
     }
+    
+    

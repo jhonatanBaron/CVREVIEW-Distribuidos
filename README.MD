@@ -20,11 +20,17 @@
     Usuario/Contraseña: guest / guest.
 
 -post de upload:
-curl -X POST http://localhost:8000/apicurl -X POST http://localhost:8000/api/upload \
-  -F "file=@CVS/1.Modern Minimalist CV Resume.pdf" \
-  -F "full_name=Juan Perez" \
-  -F "email=juan@example.com" \
-  -F "position=Backend Developer"
-  
-  --> muestra -->{"message":"CV recibido y enviado a procesamiento correctamente.","cv_id":7,"status_endpoint":"/api/status/7"}
+curl -X POST http://localhost:8000/api/upload \
+  -F "file=@/home/jhona/Escritorio/CVREVIEW-Distribuidos/CVS/4_White_and_Black_Tech_Professional_Resume.pdf" \
+  -F "full_name=Stelle Darcy" \
+  -F "email=stelle.darcy@example.com" \
+  -F "position=UX Designer"
+muestra ---> {"message":"CV recibido y enviado a procesamiento correctamente.","cv_id":9,"status_endpoint":"/api/status/9"}
+
+-confirmamos el archivo con : "ls files/"
+muestra por ejemplo--> 4_White_and_Black_Tech_Professional_Resume.pdf
+
+-confirmamos dentro del contenedor parser con: "docker exec -it parser_worker ls /files"
+muestra por ejemplo--> 4_White_and_Black_Tech_Professional_Resume.pdf
+
 

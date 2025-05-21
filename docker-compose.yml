@@ -1,7 +1,11 @@
 
+
 services:
+
+  # PostgreSQL
   postgres:
     image: postgres:15
+    container_name: postgres_cvflow
     restart: always
     environment:
       POSTGRES_DB: cvflow
@@ -12,60 +16,79 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # RabbitMQ con panel de gestión
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  # API FastAPI
   cvflow_api:
     build:
       context: .
       dockerfile: api/Dockerfile
-    ports:
-      - "8000:8000"
+    container_name: cvflow_api
     depends_on:
       - postgres
       - rabbitmq
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./files:/app/files
     environment:
       - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
       - RABBITMQ_HOST=rabbitmq
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"  # Interfaz web de gestión
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-      
+  # Parser Worker
   parser_worker:
     build:
       context: .
       dockerfile: api/workers/Dockerfile
+    container_name: parser_worker
+    depends_on:
+      - postgres
+      - rabbitmq
     volumes:
       - ./files:/files
-    depends_on:
-      - rabbitmq
-      - postgres
     environment:
       - WORKER_TYPE=parser
       - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
+
+  # Keyword Extraction Worker
   keyword_worker:
     build:
       context: .
       dockerfile: api/workers/Dockerfile
+    container_name: keyword_worker
     depends_on:
+      - postgres
       - rabbitmq
     environment:
       - WORKER_TYPE=keyword
       - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
+
+  # CV Evaluator (Feedback) Worker
   cv_evaluator:
     build:
       context: .
       dockerfile: api/workers/Dockerfile
+    container_name: cv_evaluator
     depends_on:
+      - postgres
       - rabbitmq
     environment:
       - WORKER_TYPE=cv_evaluator
       - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=postgresql://cvuser:cvpass@postgres:5432/cvflow
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-
 
 volumes:
   pgdata:
+    driver: local

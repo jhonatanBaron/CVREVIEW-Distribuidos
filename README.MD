@@ -19,3 +19,12 @@
     http://localhost:15672
     Usuario/Contraseña: guest / guest.
 
+-post de upload:
+curl -X POST http://localhost:8000/apicurl -X POST http://localhost:8000/api/upload \
+  -F "file=@CVS/1.Modern Minimalist CV Resume.pdf" \
+  -F "full_name=Juan Perez" \
+  -F "email=juan@example.com" \
+  -F "position=Backend Developer"
+  
+  --> muestra -->{"message":"CV recibido y enviado a procesamiento correctamente.","cv_id":7,"status_endpoint":"/api/status/7"}
+

@@ -1,9 +1,10 @@
+#api/routes/upload.py
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import uuid4
-from cv_model import CV
-from database import SessionLocal
-from rabbitmq import publish_to_parser_queue
+from api.cv_model import CV
+from api.database import SessionLocal
+from api.rabbitmq import publish_to_parser_queue
 import os
 
 router = APIRouter()

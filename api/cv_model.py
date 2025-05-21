@@ -1,5 +1,6 @@
+#api/cv_model.py
 from sqlalchemy import Column, Integer, String, Text
-from database import Base
+from api.database import Base
 
 class CV(Base):
     __tablename__ = "cvs"

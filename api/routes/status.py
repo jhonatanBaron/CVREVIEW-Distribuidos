@@ -1,7 +1,8 @@
+#api/routes/status.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from cv_model import CV
+from api.database import SessionLocal
+from api.cv_model import CV
 
 router = APIRouter()
 

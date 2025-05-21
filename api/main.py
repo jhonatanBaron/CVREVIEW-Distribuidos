@@ -35,4 +35,8 @@ app.add_middleware(
 app.include_router(upload_router, prefix="/api")
 app.include_router(status_router, prefix="/api")
 
+@app.get("/")
+async def root():
+    return {"message": "Bienvenido a la API de CVFlow. Usa /api/upload para subir un CV y /api/status/{cv_id} para consultar la documentación."}
+
 # Punto de entrada de Uvicorn: uvicorn api.main:app --host 0.0.0.0 --port 8000

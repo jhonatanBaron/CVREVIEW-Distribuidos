@@ -48,4 +48,9 @@ async def upload_cv(
     }
     publish_to_parser_queue(message)
 
-    return {"cv_id": cv.id, "status": "pendiente"}
+  #  return {"cv_id": cv.id, "status": "pendiente"}
+    return {
+    "message": "CV recibido y enviado a procesamiento correctamente.",
+    "cv_id": cv.id,
+    "status_endpoint": f"/api/status/{cv.id}"
+    }

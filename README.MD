@@ -34,3 +34,8 @@ muestra por ejemplo--> 4_White_and_Black_Tech_Professional_Resume.pdf
 muestra por ejemplo--> 4_White_and_Black_Tech_Professional_Resume.pdf
 
 
+-acceso a db:
+    docker exec -it
+    postgres_cvflow psql -U
+    cvuser -d cvflow
+    ejemplo --> SELECT*FROM cvs;

@@ -1,7 +1,3 @@
-
-
-### 1. Crear archivo __init__.py
-
 # api/__init__.py
 # (vacío, para reconocer api/ como paquete Python)
 # api/main.py

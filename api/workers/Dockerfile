@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
@@ -13,9 +14,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY parser_worker.py .
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir pdfminer.six docx2txt pika psycopg2-binary spacy
+# Install spaCy model
 RUN python -m spacy download en_core_web_sm
 
-CMD ["python", "parser_worker.py"]
+# Copy worker files to specific directory
+COPY api/workers/*.py .
+
+# Create a startup script
+RUN echo '#!/bin/bash\npython /app/$WORKER_TYPE"_worker.py"' > /app/start.sh && \
+    chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]

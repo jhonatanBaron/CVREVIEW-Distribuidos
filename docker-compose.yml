@@ -13,7 +13,9 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   cvflow_api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     ports:
       - "8000:8000"
     depends_on:
@@ -33,20 +35,36 @@ services:
       - RABBITMQ_DEFAULT_PASS=guest
       
   parser_worker:
-    build: ./api/workers
+    build:
+      context: .
+      dockerfile: api/workers/Dockerfile
     volumes:
       - ./files:/files
     depends_on:
       - rabbitmq
       - postgres
     environment:
+      - WORKER_TYPE=parser
       - RABBITMQ_HOST=rabbitmq
   keyword_worker:
-    build: ./api/workers
+    build:
+      context: .
+      dockerfile: api/workers/Dockerfile
     depends_on:
       - rabbitmq
     environment:
+      - WORKER_TYPE=keyword
       - RABBITMQ_HOST=rabbitmq
+  cv_evaluator:
+    build:
+      context: .
+      dockerfile: api/workers/Dockerfile
+    depends_on:
+      - rabbitmq
+    environment:
+      - WORKER_TYPE=cv_evaluator
+      - RABBITMQ_HOST=rabbitmq
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
 
 
 volumes:
